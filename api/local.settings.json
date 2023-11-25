@@ -1,9 +1,9 @@
 {
   "IsEncrypted": false,
   "Values": {
-    "AzureWebJobsStorage": "depprocureformstorage",
+    "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;AccountName=depprocureformstorage;AccountKey=dkZqDW09Q4OyRPAiSd97Ih2xUo7AIA/Jt8SbptEBO37/aZ90UmCOwpOOMrIZNJA6G1GZYRDKI2fn+ASte8QsWw==;EndpointSuffix=core.windows.net",
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "AZURE_OPENAI_ENDPOINT": "https://ash-aiml-workspace-aoai.openai.azure.com/",
+    "AZURE_OPENAI_ENDPOINT": "https://ash-aiml-workspace-aoai.openai.azure.com/"
     "AZURE_OPENAI_API_KEY": "2c0b6697ce4e4f9bacc62c224288594e",
     "AZURE_OPENAI_CHAT_DEPLOYMENT" : "gpt-35-turbo-16k",
     "AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT" : "text-embedding-ada-002",
@@ -11,11 +11,11 @@
     "AZURE_SEARCH_ENDPOINT": "https://static-webapp-avatar.search.windows.net",
     "AZURE_SEARCH_API_KEY": "GQemWa1Jk2KSO89crwqYbiaHFVh1OqVhMhrfYGvAfdAzSeCy37rz",
     "AZURE_SEARCH_INDEX": "products",
-    "AZURE_SPEECH_REGION": "westus2",
-    "AZURE_SPEECH_API_KEY": "f22920f0f7d64ce39ec6aa9ab6ca06a1",
+    "AZURE_SPEECH_REGION": "westeurope",
+    "AZURE_SPEECH_API_KEY": "westus2",
     "TEXT_ANALYTICS_ENDPOINT": "https://languagedep.cognitiveservices.azure.com/",
     "TEXT_ANALYTICS_KEY": "9be55ef15c3d401e8a2efa6140bde1e0",
-    "BLOB_SAS_URL": "https://depprocureformstorage.blob.core.windows.net/interactive-avatar-product-images?sp=r&st=2023-11-21T06:47:55Z&se=2023-11-21T14:47:55Z&spr=https&sv=2022-11-02&sr=c&sig=Wp%2Baa6dJQnU1OmVUO0p2JyoxA0v%2BPtAOxhasez4RIqA%3D",
+    "BLOB_SAS_URL": "https://depprocureformstorage.blob.core.windows.net/interactive-avatar-product-images?sp=r&st=2023-11-25T04:12:45Z&se=2023-11-25T12:12:45Z&spr=https&sv=2022-11-02&sr=c&sig=Mxf9ApiH5E9uaNEON3p9cYtr2ZVAjKGq%2B%2FiT8nERkis%3D",
     "SQL_DB_SERVER": "interactive-avatar.database.windows.net",
     "SQL_DB_USER": "interactive-avatar",
     "SQL_DB_PASSWORD": "Server#1",
