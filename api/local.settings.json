@@ -3,7 +3,7 @@
   "Values": {
     "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;AccountName=depprocureformstorage;AccountKey=dkZqDW09Q4OyRPAiSd97Ih2xUo7AIA/Jt8SbptEBO37/aZ90UmCOwpOOMrIZNJA6G1GZYRDKI2fn+ASte8QsWw==;EndpointSuffix=core.windows.net",
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "AZURE_OPENAI_ENDPOINT": "https://ash-aiml-workspace-aoai.openai.azure.com/"
+    "AZURE_OPENAI_ENDPOINT": "https://ash-aiml-workspace-aoai.openai.azure.com/",
     "AZURE_OPENAI_API_KEY": "2c0b6697ce4e4f9bacc62c224288594e",
     "AZURE_OPENAI_CHAT_DEPLOYMENT" : "gpt-35-turbo-16k",
     "AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT" : "text-embedding-ada-002",
