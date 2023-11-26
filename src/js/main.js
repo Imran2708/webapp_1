@@ -51,28 +51,16 @@ function removeDocumentReferences(str) {
 
 // Setup WebRTC
 function setupWebRTC() {
-  // Create WebRTC peer connection
-  const Url ="/api/getIceServerToken"
-  axios({
-    method: 'post',
-    url : Url
-  })
-    .then(response => response.json())
-    .then(response => { 
-      IceServerUsername = response.username
-      IceServerCredential = response.credential
-
-      peerConnection = new RTCPeerConnection({
+    IceServerUsername = "BQAANmXAyIAB2iE0CgIjuChTUuN6ju7NH2owrtXiS1AAAAAMARBLzcgb+8ZGv7VTu51ROGIsrn3j1xkOsVZBYYwYaz6M5IQwJe4="
+    IceServerCredential = "33qDidv0KCP3VDTvpWZCeSaDq2Y="
+    peerConnection = new RTCPeerConnection({
         iceServers: [{
-          urls: [IceServerUrl],
-          username: IceServerUsername,
-          credential: IceServerCredential
+            urls: [IceServerUrl],
+            username: IceServerUsername,
+            credential: IceServerCredential
         }]
-      })
-      .catch(err=>console.log(err))
-    
-      // Fetch WebRTC video stream and mount it to an HTML video element
-      peerConnection.ontrack = function (event) {
+    })
+    peerConnection.ontrack = function (event) {
         console.log('peerconnection.ontrack', event)
         // Clean up existing video element if there is any
         remoteVideoDiv = document.getElementById('remoteVideo')
@@ -100,7 +88,7 @@ function setupWebRTC() {
       }
       
       // Make necessary update to the web page when the connection state changes
-      peerConnection.oniceconnectionstatechange = e => {
+    peerConnection.oniceconnectionstatechange = e => {
         console.log("WebRTC status: " + peerConnection.iceConnectionState)
     
         if (peerConnection.iceConnectionState === 'connected') {
@@ -115,14 +103,13 @@ function setupWebRTC() {
       }
     
       // Offer to receive 1 audio, and 1 video track
-      peerConnection.addTransceiver('video', { direction: 'sendrecv' })
-      peerConnection.addTransceiver('audio', { direction: 'sendrecv' })
+    peerConnection.addTransceiver('video', { direction: 'sendrecv' })
+    peerConnection.addTransceiver('audio', { direction: 'sendrecv' })
     
       // Set local description
-      peerConnection.createOffer().then(sdp => {
+    peerConnection.createOffer().then(sdp => {
         peerConnection.setLocalDescription(sdp).then(() => { setTimeout(() => { connectToAvatarService() }, 1000) })
       }).catch(console.log)
-    })  
 }
 
 async function generateText(prompt) {
