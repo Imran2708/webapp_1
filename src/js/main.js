@@ -110,38 +110,35 @@ function setupWebRTC() {
 }
 
 async function generateText(prompt) {
+
   messages.push({
     role: 'user',
     content: prompt
   });
- 
-  let generatedText;
-  let products;
-  const apiUrl = "/api/message"; // Update with the actual API endpoint
- 
-  try {
-    const response = await axios.post(apiUrl, {
-      messages: messages
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
- 
-    generatedText = response.data.messages[response.data.messages.length - 1].content;
-    messages = response.data.messages;
-    products = response.data.products;
- 
-  } catch (err) {
-    console.error(err);
-  } 
+
+  let generatedText
+  let products
+  const Url1="/api/message"
+  await axios({
+    method: 'POST', 
+    url:Url1,
+    headers: { 
+      'Content-Type': 'application/json'},
+    body: JSON.stringify(messages) })
+    .then(response => response.json())
+    .then(data => {
+      generatedText = data["messages"][data["messages"].length - 1].content;
+      messages = data["messages"];
+      products = data["products"]})
+    .catch(err=>console.log(err));
+
   addToConversationHistory(generatedText, 'light');
-  if (products && products.length > 0) {
+  if(products.length > 0) {
     addProductToChatHistory(products[0]);
-  } 
+  }
   return generatedText;
 }
-
+ 
 // Connect to TTS Avatar API
 function connectToAvatarService() {
   // Construct TTS Avatar service request
