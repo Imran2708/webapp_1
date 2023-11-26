@@ -240,23 +240,6 @@ window.startSession = () => {
   requestAnimationFrame(setupWebRTC)
 }
 
-  const url2="/api/getSpeechToken"
-  axios({
-    method: 'post',
-    url: url2})
-    .then(response => response.text())
-    .then(response => { 
-      speechSynthesisConfig.authorizationToken = response;
-      token = response
-    })
-    .then(() => {
-      speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null)
-      requestAnimationFrame(setupWebRTC)
-    })
-    .catch(err=>console.log(err))
-  // setupWebRTC()
-//}
-
 async function greeting() {
   addToConversationHistory("Hello, my name is Lisa. How can I help you?", "light")
 
