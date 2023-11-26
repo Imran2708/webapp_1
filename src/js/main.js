@@ -110,32 +110,33 @@ function setupWebRTC() {
 }
 
 async function generateText(prompt) {
-
   messages.push({
     role: 'user',
     content: prompt
   });
-
-  let generatedText
-  let products
-  const Url1="/api/message"
-  await axios({
-    method: 'POST', 
-    url:Url1,
-    headers: { 
-      'Content-Type': 'application/json'},
-    body: JSON.stringify(messages) })
-    .then(response => response.json())
-    .then(data => {
-      generatedText = data["messages"][data["messages"].length - 1].content;
-      messages = data["messages"];
-      products = data["products"]})
-    .catch(err=>console.log(err));
-
+ 
+  let generatedText;
+  let products;
+  const Url1 = "/api/message";
+ 
+  try {
+    const response = await axios.post(Url1, {
+      messages: messages // Assuming the server expects a 'messages' property in the request body
+    });
+ 
+    // Assuming the response.data is in JSON format
+    generatedText = response.data.messages[response.data.messages.length - 1].content;
+    messages = response.data.messages;
+    products = response.data.products;
+  } catch (error) {
+    console.error("Error:", error);
+  }
+ 
   addToConversationHistory(generatedText, 'light');
-  if(products.length > 0) {
+  if (products.length > 0) {
     addProductToChatHistory(products[0]);
   }
+ 
   return generatedText;
 }
 
