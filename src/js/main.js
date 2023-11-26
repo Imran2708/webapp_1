@@ -255,7 +255,7 @@ window.startSession = () => {
     })
     .catch(err=>console.log(err))
   // setupWebRTC()
-}
+//}
 
 async function greeting() {
   addToConversationHistory("Hello, my name is Lisa. How can I help you?", "light")
