@@ -117,26 +117,28 @@ async function generateText(prompt) {
  
   let generatedText;
   let products;
-  const Url1 = "/api/message";
+  const apiUrl = "/api/message"; // Update with the actual API endpoint
  
   try {
-    const response = await axios.post(Url1, {
-      messages: messages // Assuming the server expects a 'messages' property in the request body
+    const response = await axios.post(apiUrl, {
+      messages: messages
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
  
-    // Assuming the response.data is in JSON format
     generatedText = response.data.messages[response.data.messages.length - 1].content;
     messages = response.data.messages;
     products = response.data.products;
-  } catch (error) {
-    console.error("Error:", error);
-  }
  
+  } catch (err) {
+    console.error(err);
+  } 
   addToConversationHistory(generatedText, 'light');
-  if (products.length > 0) {
+  if (products && products.length > 0) {
     addProductToChatHistory(products[0]);
-  }
- 
+  } 
   return generatedText;
 }
 
