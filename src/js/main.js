@@ -239,14 +239,18 @@ window.startSession = () => {
   xhr.setRequestHeader("Content-Type", "application/json");
 
   xhr.onreadystatechange = function() {
-    if (xhr.readyState == 4 && xhr.status == 200) {
-      var response = xhr.access_token;
-      speechSynthesisConfig.authorizationToken = response;
-      token = response;
-      speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
-      requestAnimationFrame(setupWebRTC);
-    } else if (xhr.readyState == 4 && xhr.status != 200) {
-      console.error("Error fetching access token:", xhr.status, xhr.access_token);
+    if (xhr.readyState == 4) {
+      if (xhr.status == 200) {
+        var response = xhr.responseText;
+        speechSynthesisConfig.authorizationToken = response;
+        token = response;
+        speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
+        requestAnimationFrame(setupWebRTC);
+      } else if (xhr.status == 404) {
+        console.error("Error fetching access token: 404 (Not Found)");
+      } else {
+        console.error("Error fetching access token: ", + xhr.status + " " + xhr.responseText);
+      }
     }
   };
   xhr.send();
