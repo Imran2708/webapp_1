@@ -224,32 +224,25 @@ function connectToAvatarService() {
 }
 
 window.startSession = () => {
-  // Simulate an HTTP response
-  var httpResponse = {
-    status: 200,
-    text: () => Promise.resolve("eyJhbGciOiJFUzI1NiIsImtpZCI6ImtleTEiLCJ0eXAiOiJKV1QifQ.eyJyZWdpb24iOiJ3ZXN0dXMyIiwic3Vic2NyaXB0aW9uLWlkIjoiNTE1NzZhOGZkY2YzNDI4MDk0MDFhOGNmNmVkMmM4NjEiLCJwcm9kdWN0LWlkIjoiU3BlZWNoU2VydmljZXMuUzAiLCJjb2duaXRpdmUtc2VydmljZXMtZW5kcG9pbnQiOiJodHRwczovL2FwaS5jb2duaXRpdmUubWljcm9zb2Z0LmNvbS9pbnRlcm5hbC92MS4wLyIsImF6dXJlLXJlc291cmNlLWlkIjoiL3N1YnNjcmlwdGlvbnMvY2RkMTMwMzAtNzdlMC00MWE1LWIwZDktNTU4YzdlMTA1NTFjL3Jlc291cmNlR3JvdXBzL0FJTUxQT0MyREVQL3Byb3ZpZGVycy9NaWNyb3NvZnQuQ29nbml0aXZlU2VydmljZXMvYWNjb3VudHMvdGV4dHRvc3BlZWNoc3R1ZGlvIiwic2NvcGUiOiJzcGVlY2hzZXJ2aWNlcyIsImF1ZCI6InVybjptcy5zcGVlY2hzZXJ2aWNlcy53ZXN0dXMyIiwiZXhwIjoxNzAxMDYzMjE0LCJpc3MiOiJ1cm46bXMuY29nbml0aXZlc2VydmljZXMifQ.cQtrmGhtxbplZ4MD-zw8EEDqDsDwZGypNA1yyJIPRKXqvAFcG3xt7WBEQevxAP5g-J2Cj-79vY-JL4yv8yJc7g")
-  };
+  // Create the <i> element
+  var iconElement = document.createElement("i");
+  iconElement.className = "fa fa-spinner fa-spin";
+  iconElement.id = "loadingIcon"
+  var parentElement = document.getElementById("playVideo");
+  parentElement.prepend(iconElement);
  
-  // Process the simulated HTTP response
-  processHttpResponse(httpResponse);
+  speechSynthesisConfig.speechSynthesisVoiceName = TTSVoice
+  document.getElementById('playVideo').className = "round-button-hide"
+ 
+  response = "eyJhbGciOiJFUzI1NiIsImtpZCI6ImtleTEiLCJ0eXAiOiJKV1QifQ.eyJyZWdpb24iOiJ3ZXN0dXMyIiwic3Vic2NyaXB0aW9uLWlkIjoiNTE1NzZhOGZkY2YzNDI4MDk0MDFhOGNmNmVkMmM4NjEiLCJwcm9kdWN0LWlkIjoiU3BlZWNoU2VydmljZXMuUzAiLCJjb2duaXRpdmUtc2VydmljZXMtZW5kcG9pbnQiOiJodHRwczovL2FwaS5jb2duaXRpdmUubWljcm9zb2Z0LmNvbS9pbnRlcm5hbC92MS4wLyIsImF6dXJlLXJlc291cmNlLWlkIjoiL3N1YnNjcmlwdGlvbnMvY2RkMTMwMzAtNzdlMC00MWE1LWIwZDktNTU4YzdlMTA1NTFjL3Jlc291cmNlR3JvdXBzL0FJTUxQT0MyREVQL3Byb3ZpZGVycy9NaWNyb3NvZnQuQ29nbml0aXZlU2VydmljZXMvYWNjb3VudHMvdGV4dHRvc3BlZWNoc3R1ZGlvIiwic2NvcGUiOiJzcGVlY2hzZXJ2aWNlcyIsImF1ZCI6InVybjptcy5zcGVlY2hzZXJ2aWNlcy53ZXN0dXMyIiwiZXhwIjoxNzAxMDYzMjE0LCJpc3MiOiJ1cm46bXMuY29nbml0aXZlc2VydmljZXMifQ.cQtrmGhtxbplZ4MD-zw8EEDqDsDwZGypNA1yyJIPRKXqvAFcG3xt7WBEQevxAP5g-J2Cj-79vY-JL4yv8yJc7g"
+  speechSynthesisConfig.authorizationToken = response;
+  token = response
+  speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null)
+  requestAnimationFrame(setupWebRTC)
+ 
+  // Return an HttpResponse with the value of the response variable
+  return new HttpResponse(response);
 }
- 
-function processHttpResponse(response) {
-  if (response.status === 200) {
-    // Success: Get the text from the response
-    var access_token = response.text();
- 
-    // Continue with the rest of your code
-    var speechSynthesisConfig = {};  // Replace with your actual config
-    speechSynthesisConfig.speechSynthesisVoiceName = TTSVoice;
- 
-    // ... rest of your code ...
-  } else {
-    // Error: Log or handle the error
-    console.error("Error: " + response.status);
-  }
-}
-
 
 async function greeting() {
   addToConversationHistory("Hello, my name is Lisa. How can I help you?", "light")
