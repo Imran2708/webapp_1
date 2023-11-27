@@ -110,35 +110,51 @@ function setupWebRTC() {
 }
 
 async function generateText(prompt) {
-
   messages.push({
     role: 'user',
     content: prompt
   });
-
-  let generatedText
-  let products
-  const Url1="/api/message"
-  await axios({
-    method: 'POST', 
-    url:Url1,
-    headers: { 
-      'Content-Type': 'application/json'},
-    body: JSON.stringify(messages) })
-    .then(response => response.json())
-    .then(data => {
-      generatedText = data["messages"][data["messages"].length - 1].content;
-      messages = data["messages"];
-      products = data["products"]})
-    .catch(error=>console.log(error));
-
-  addToConversationHistory(generatedText, 'light');
-  if(products.length > 0) {
-    addProductToChatHistory(products[0]);
-  }
-  return generatedText;
-}
  
+  let generatedText;
+  let products;
+  const apiUrl = "/api/message"; // Update with the actual API endpoint
+ 
+  try {
+    const response = await axios.post(apiUrl, {
+      messages: messages
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+ 
+    // Assuming the response.data structure matches your expectations
+    generatedText = response.data.messages[response.data.messages.length - 1].content;
+    messages = response.data.messages;
+    products = response.data.products;
+ 
+    addToConversationHistory(generatedText, 'light');
+ 
+    if (products && products.length > 0) {
+      addProductToChatHistory(products[0]);
+    }
+ 
+    return generatedText;
+ 
+  } catch (error) {
+    // Check if the error is due to CORS or server-side issues
+    if (error.response) {
+      console.error("Server responded with an error:", error.response.status);
+    } else if (error.request) {
+      console.error("The request was made, but no response was received.");
+    } else {
+      console.error("Error setting up the request:", error.message);
+    }
+ 
+    // Handle the error accordingly
+    console.log("Error details:", error);
+  }
+}
 // Connect to TTS Avatar API
 function connectToAvatarService() {
   // Construct TTS Avatar service request
