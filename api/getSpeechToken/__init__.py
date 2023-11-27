@@ -7,12 +7,14 @@ import azure.functions as func
 # Define subscription key and region
 subscription_key = os.getenv("AZURE_SPEECH_API_KEY")
 region = os.getenv("AZURE_SPEECH_REGION")
+azure_speech_endpoint = os.getenv("AZURE_SPEECH_ENDPOINT")
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     # Define token endpoint
-    token_endpoint = f"https://{region}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
+    #token_endpoint = f"https://{region}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
+    token_endpoint = f"{azure_speech_endpoint}"
 
     # Make HTTP request with subscription key as header
     response = requests.post(token_endpoint, headers={"Ocp-Apim-Subscription-Key": subscription_key})
