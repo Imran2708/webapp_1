@@ -130,7 +130,7 @@ async function generateText(prompt) {
       generatedText = data["messages"][data["messages"].length - 1].content;
       messages = data["messages"];
       products = data["products"]})
-    .catch(err=>console.log(err));
+    .catch(error=>console.log(error));
 
   addToConversationHistory(generatedText, 'light');
   if(products.length > 0) {
