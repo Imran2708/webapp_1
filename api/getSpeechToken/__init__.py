@@ -18,10 +18,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     response = requests.post(token_endpoint, headers={"Ocp-Apim-Subscription-Key": subscription_key})
 
     if response.status_code == 200:
-        access_token = response.text            
+        access_token = response.text
+
+        #store the token explicitly
+        output = access_token
+        logging.info(f"Output: {output}")
         return func.HttpResponse(
-             access_token,
+             output,
              status_code=200
         )
     else:
-        return func.HttpResponse(str(response.status_code))
+        output = str(reponse.status_code)
+        logging.error(f"Error: {output}")
+        return func.HttpResponse(output))
