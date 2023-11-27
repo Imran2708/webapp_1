@@ -223,44 +223,47 @@ function connectToAvatarService() {
   speechSynthesizer.setupTalkingAvatarAsync(JSON.stringify(clientRequest), complete_cb, error_cb)
 }
 
-window.startSession = () => {
-  var iconElement = document.createElement("i");
-  iconElement.className = "fa fa-spinner fa-spin";
-  iconElement.id = "loadingIcon";
-  var parentElement = document.getElementById("playVideo");
-  parentElement.prepend(iconElement);
+// Initialize the XMLHttpRequest object
+var xhr = new XMLHttpRequest();
  
-  speechSynthesisConfig.speechSynthesisVoiceName = TTSVoice;
-  document.getElementById('playVideo').className = "round-button-hide";
+// Set the request method and URL
+xhr.open('POST', '/api/getSpeechToken', true);
  
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", "/api/getSpeechToken", true);
-  xhr.setRequestHeader("Content-Type", "application/json");
+// Set the request header
+xhr.setRequestHeader('Content-Type', 'application/json');
  
-  // Define the callback function for handling the response
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState === 4) {
-      if (xhr.status === 200) {
-        // Success: process the response
-        var response = xhr.responseText;
-        speechSynthesisConfig.authorizationToken = response;
-        token = response;
-        speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
-        requestAnimationFrame(setupWebRTC);
-      } else {
-        // Error: handle the error
-        console.error('Error fetching access token. Status:', xhr.status);
-       // alert('Error fetching access token. Please try again later.');
-        setTimeout(function () {
-          xhr.send();
-        }, 1000);
+// Set the event handler for changes in the state of the request
+xhr.onreadystatechange = function () {
+  // Check if the request is complete
+  if (xhr.readyState === XMLHttpRequest.DONE) {
+    // Check if the request was successful (status code 2xx)
+    if (xhr.status >= 200 && xhr.status < 300) {
+      // The request was successful, handle the response here
+      var response = xhr.responseText;
  
-        // Optionally, you can perform additional error handling here
-        // For example, redirect to an error page
-        // window.location.href = '/error.html';
-      }
+      // Continue with the existing logic
+      speechSynthesisConfig.authorizationToken = response;
+      token = response;
+      speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
+      requestAnimationFrame(setupWebRTC);
+    } else {
+      // The request failed, handle the error
+      console.error('Error fetching access token. Status:', xhr.status);
+ 
+      // Optionally, you can perform additional error handling here
+      // For example, redirect to an error page or display an error message
     }
-  };
+  }
+};
+ 
+// Create a JSON payload (assuming jsonData is defined)
+var jsonData = { /* your JSON data */ };
+ 
+// Convert JSON to string
+var jsonString = JSON.stringify(jsonData);
+ 
+// Send the request with the JSON payload
+xhr.send(jsonString);
  
   // Define the callback function for handling network errors
   xhr.onerror = function () {
