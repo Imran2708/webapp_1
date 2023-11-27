@@ -259,8 +259,6 @@ window.startSession = () => {
   xhr.send();
 };
 
-has context menu
-
 
 async function greeting() {
   addToConversationHistory("Hello, my name is Lisa. How can I help you?", "light")
