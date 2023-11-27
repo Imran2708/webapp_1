@@ -224,7 +224,6 @@ function connectToAvatarService() {
 }
 
 window.startSession = () => {
-  // Create the <i> element
   var iconElement = document.createElement("i");
   iconElement.className = "fa fa-spinner fa-spin";
   iconElement.id = "loadingIcon";
@@ -234,29 +233,47 @@ window.startSession = () => {
   speechSynthesisConfig.speechSynthesisVoiceName = TTSVoice;
   document.getElementById('playVideo').className = "round-button-hide";
  
-  // Create a new XMLHttpRequest object
   var xhr = new XMLHttpRequest();
+  xhr.open("POST", "/api/getSpeechToken", true);
+  xhr.setRequestHeader("Content-Type", "application/json");
  
-  // Configure it to make a GET request to your Azure Function
-  xhr.open('GET', '/api/getSpeechToken', true); // replace with your actual function URL
+  // Define the callback function for handling the response
+  xhr.onload = function () {
+    if (xhr.status === 200) {
+      // Success: process the response
+      var response = xhr.responseText;
+      speechSynthesisConfig.authorizationToken = response;
+      token = response;
+      speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
+      requestAnimationFrame(setupWebRTC);
+    } else {
+      // Error: handle the error
+      console.error('Error fetching access token. Status:', xhr.status);
  
-  // Set a callback function to handle the response
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState === 4) { // 4 means the request is complete
-      if (xhr.status === 200) { // 200 means the request was successful
-        var token = xhr.responseText;
-        speechSynthesisConfig.authorizationToken = token;
-        speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
-        requestAnimationFrame(setupWebRTC);
-      } else {
-        console.error('Error fetching access token. Status:', xhr.status);
-        // Handle the error
-      }
+      // Optionally, you can perform additional error handling here
+      // For example, redirect to an error page
+      // window.location.href = '/error.html';
     }
   };
  
+  // Define the callback function for handling network errors
+  xhr.onerror = function () {
+    // Network error: handle the error
+    console.error('Network error while fetching access token.');
+ 
+    // Optionally, you can perform additional error handling here
+    // For example, redirect to an error page
+    // window.location.href = '/error.html';
+  };
+ 
+  // Prepare the data to be sent (if needed)
+  var requestData = {
+    // Your request data here
+  };
+  var jsonData = JSON.stringify(requestData);
+ 
   // Send the request
-  xhr.send();
+  xhr.send(jsonData);
 };
 
 
