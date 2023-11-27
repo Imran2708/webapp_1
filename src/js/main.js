@@ -223,7 +223,7 @@ function connectToAvatarService() {
   speechSynthesizer.setupTalkingAvatarAsync(JSON.stringify(clientRequest), complete_cb, error_cb)
 }
 
-window.startSession = () => {
+window.startSession = async () => {
   // Create the <i> element
   var iconElement = document.createElement("i");
   iconElement.className = "fa fa-spinner fa-spin";
@@ -235,7 +235,7 @@ window.startSession = () => {
   document.getElementById('playVideo').className = "round-button-hide"
 
   try {
-    const response = await axios.post('/api/getSppechToken/__init__.py');
+    const response = await axios.post('/api/getSpeechToken/__init__.py');
     if (response.status === 200){
       const authorizationToken = response.data;
       speechSynthesisConfig.authorizationToken = authorizationToken;
