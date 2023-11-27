@@ -239,6 +239,7 @@ window.startSession = () => {
     fetch('/api/getSpeechToken')
       .then(reponse => response.text())
       .then(access_token => {
+        var response = access_token;
         speechSynthesisConfig.authorizationToken = response;
         token = response;
         speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
