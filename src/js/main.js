@@ -234,7 +234,7 @@ window.startSession = async () => {
   document.getElementById('playVideo').className = "round-button-hide" 
   try {
     // Make an HTTP request to your Azure Function endpoint using Axios
-    const response = await axios.post('/api/getSpeechToken/__init__.py');  // Replace 'your-function-name' with your actual Azure Function name
+    const response = await axios.post('/api/getSpeechToken');  // Replace 'your-function-name' with your actual Azure Function name
     if (response.status === 200) {
       // If the response is successful, use it to set up the WebRTC connection
       const authorizationToken = response.data;
