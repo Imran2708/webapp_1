@@ -223,32 +223,43 @@ function connectToAvatarService() {
   speechSynthesizer.setupTalkingAvatarAsync(JSON.stringify(clientRequest), complete_cb, error_cb)
 }
 
-window.startSession = async () => {
+window.startSession = () => {
   // Create the <i> element
   var iconElement = document.createElement("i");
   iconElement.className = "fa fa-spinner fa-spin";
-  iconElement.id = "loadingIcon"
+  iconElement.id = "loadingIcon";
   var parentElement = document.getElementById("playVideo");
-  parentElement.prepend(iconElement); 
-  speechSynthesisConfig.speechSynthesisVoiceName = TTSVoice
-  document.getElementById('playVideo').className = "round-button-hide" 
-  try {
-    // Make an HTTP request to your Azure Function endpoint using Axios
-    const response = await axios.post('/api/getSpeechToken');  // Replace 'your-function-name' with your actual Azure Function name
-    if (response.status === 200) {
-      // If the response is successful, use it to set up the WebRTC connection
-      const authorizationToken = response.data;
-      speechSynthesisConfig.authorizationToken = authorizationToken;
-      token = authorizationToken;
-      speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
-      requestAnimationFrame(setupWebRTC);
-    } else {
-      console.error('Failed to get authorization token. Status:', response.status);
+  parentElement.prepend(iconElement);
+ 
+  speechSynthesisConfig.speechSynthesisVoiceName = TTSVoice;
+  document.getElementById('playVideo').className = "round-button-hide";
+ 
+  // Create a new XMLHttpRequest object
+  var xhr = new XMLHttpRequest();
+ 
+  // Configure it to make a GET request to your Azure Function
+  xhr.open('GET', '/api/getSpeechToken', true); // replace with your actual function URL
+ 
+  // Set a callback function to handle the response
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4) { // 4 means the request is complete
+      if (xhr.status === 200) { // 200 means the request was successful
+        var token = xhr.responseText;
+        speechSynthesisConfig.authorizationToken = token;
+        speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
+        requestAnimationFrame(setupWebRTC);
+      } else {
+        console.error('Error fetching access token. Status:', xhr.status);
+        // Handle the error
+      }
     }
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
+  };
+ 
+  // Send the request
+  xhr.send();
+};
+
+has context menu
 
 
 async function greeting() {
