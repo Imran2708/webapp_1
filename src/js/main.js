@@ -235,13 +235,13 @@ window.startSession = () => {
   document.getElementById('playVideo').className = "round-button-hide";
 
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/api/get_token", true);
+  xhr.open("GET", "/api/getSpeechToken", true);
   xhr.setRequestHeader("Content-Type", "application/json");
 
   xhr.onreadystatechange = function() {
     if (xhr.readyState == 4) {
       if (xhr.status == 200) {
-        var response = xhr.responseText;
+        var response = xhr.access_token;
         speechSynthesisConfig.authorizationToken = response;
         token = response;
         speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
@@ -249,7 +249,7 @@ window.startSession = () => {
       } else if (xhr.status == 404) {
         console.error("Error fetching access token: 404 (Not Found)");
       } else {
-        console.error("Error fetching access token: ", + xhr.status + " " + xhr.responseText);
+        console.error("Error fetching access token: ", + xhr.status + " " + xhr.access_token);
       }
     }
   };
