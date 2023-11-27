@@ -245,7 +245,7 @@ window.startSession = () => {
       token = response;
       speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
       requestAnimationFrame(setupWebRTC);
-    } elise if (xhr.readyState == 4 && xhr.status! == 200) {
+    } else if (xhr.readyState == 4 && xhr.status! == 200) {
       console.error("Error fetching access token:", xhr.status, xhr.access_token);
     }
   };
