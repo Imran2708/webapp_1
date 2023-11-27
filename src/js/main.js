@@ -238,21 +238,23 @@ window.startSession = () => {
   xhr.setRequestHeader("Content-Type", "application/json");
  
   // Define the callback function for handling the response
-  xhr.onload = function () {
-    if (xhr.status === 200) {
-      // Success: process the response
-      var response = xhr.responseText;
-      speechSynthesisConfig.authorizationToken = response;
-      token = response;
-      speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
-      requestAnimationFrame(setupWebRTC);
-    } else {
-      // Error: handle the error
-      console.error('Error fetching access token. Status:', xhr.status);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        // Success: process the response
+        var response = xhr.responseText;
+        speechSynthesisConfig.authorizationToken = response;
+        token = response;
+        speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
+        requestAnimationFrame(setupWebRTC);
+      } else {
+        // Error: handle the error
+        console.error('Error fetching access token. Status:', xhr.status);
  
-      // Optionally, you can perform additional error handling here
-      // For example, redirect to an error page
-      // window.location.href = '/error.html';
+        // Optionally, you can perform additional error handling here
+        // For example, redirect to an error page
+        // window.location.href = '/error.html';
+      }
     }
   };
  
