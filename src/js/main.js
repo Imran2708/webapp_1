@@ -246,7 +246,7 @@ window.startSession = () => {
       })
       .catch(error => console.error(error));
   } catch (error) {
-    console.error("Error fetching access token:", error):
+    console.error("Error fetching access token:", error);
   }
 }
 
