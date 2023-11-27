@@ -19,15 +19,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     if response.status_code == 200:
         access_token = response.text
-
-        #store the token explicitly
-        output = access_token
-        logging.info(f"Output: {output}")
         return func.HttpResponse(
-             output,
+             access_token,
              status_code=200
         )
     else:
-        output = str(reponse.status_code)
-        logging.error(f"Error: {output}")
-        return func.HttpResponse(output))
+        return func.HttpResponse(str(response.status_code))
