@@ -235,7 +235,7 @@ window.startSession = () => {
   document.getElementById('playVideo').className = "round-button-hide";
 
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/api/getSpeechToken", true);
+  xhr.open("GET", "/api/get_token", true);
   xhr.setRequestHeader("Content-Type", "application/json");
 
   xhr.onreadystatechange = function() {
