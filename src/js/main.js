@@ -250,7 +250,10 @@ window.startSession = () => {
       } else {
         // Error: handle the error
         console.error('Error fetching access token. Status:', xhr.status);
-        alert('Error fetching access token. Please try again later.');
+       // alert('Error fetching access token. Please try again later.');
+        setTimeout(function () {
+          xhr.send();
+        }, 1000);
  
         // Optionally, you can perform additional error handling here
         // For example, redirect to an error page
