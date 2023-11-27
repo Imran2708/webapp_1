@@ -264,26 +264,6 @@ var jsonString = JSON.stringify(jsonData);
  
 // Send the request with the JSON payload
 xhr.send(jsonString);
- 
-  // Define the callback function for handling network errors
-  xhr.onerror = function () {
-    // Network error: handle the error
-    console.error('Network error while fetching access token.');
- 
-    // Optionally, you can perform additional error handling here
-    // For example, redirect to an error page
-    // window.location.href = '/error.html';
-  };
- 
-  // Prepare the data to be sent (if needed)
-  var requestData = {
-    // Your request data here
-  };
-  var jsonData = JSON.stringify(requestData);
- 
-  // Send the request
-  xhr.send(jsonData);
-};
 
 
 async function greeting() {
