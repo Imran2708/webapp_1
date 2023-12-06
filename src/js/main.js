@@ -1,34 +1,68 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license.
 
-// Global objects
-var speechRecognizer
-var avatarSynthesizer
-var peerConnection
-var messages = []
-var dataSources = []
-var enableQuickReply = false
-var quickReplies = [ 'Let me take a look.', 'Let me check.', 'One moment, please.' ]
-var speakingThreads = 0
+var system_prompt = `You are an AI assistant focused on delivering brief product details and assisting with the ordering process.
+- Before calling a function, aim to answer product queries using existing conversational context.
+- If the product information isn't clear or available, consult get_product_information for accurate details. Never invent answers.  
+- Address customer account or order-related queries with the appropriate functions.
+- Before seeking account specifics (like account_id), scan previous parts of the conversation. Reuse information if available, avoiding repetitive queries.
+- NEVER GUESS FUNCTION INPUTS! If a user's request is unclear, request further clarification. 
+- Provide responses within 3 sentences, emphasizing conciseness and accuracy.
+- If not specified otherwise, the account_id of the current user is 1000
+- Pay attention to the language the customer is using in their latest statement and respond in the same language!
+`
 
-// Logger
-const log = msg => {
-    document.getElementById('logging').innerHTML += msg + '<br>'
+const TTSVoice = "en-US-JennyMultilingualNeural" // Update this value if you want to use a different voice
+
+const CogSvcRegion = "westus2" // Fill your Azure cognitive services region here, e.g. westus2
+
+// This is the only avatar which supports live streaming so far, please don't modify
+const TalkingAvatarCharacter = "lisa"
+const TalkingAvatarStyle = "casual-sitting"
+
+supported_languages = ["en-US", "de-DE", "zh-CN", "ar-AE"] // The language detection engine supports a maximum of 4 languages
+
+const IceServerUrl = "turn:relay.communication.microsoft.com:3478" // Fill your ICE server URL here, e.g. turn:turn.azure.com:3478
+let IceServerUsername
+let IceServerCredential
+
+const BackgroundColor = '#FFFFFFFF'
+
+let token
+
+const speechSynthesisConfig = SpeechSDK.SpeechConfig.fromEndpoint(new URL("wss://{region}.tts.speech.microsoft.com/cognitiveservices/websocket/v1?enableTalkingAvatar=true".replace("{region}", CogSvcRegion)))
+
+// Global objects
+var speechSynthesizer
+var peerConnection
+var previousAnimationFrameTimestamp = 0
+
+messages = [{ "role": "system", "content": system_prompt }];
+
+function removeDocumentReferences(str) {
+  // Regular expression to match [docX]
+  var regex = /\[doc\d+\]/g;
+
+  // Replace document references with an empty string
+  var result = str.replace(regex, '');
+
+  return result;
 }
 
 // Setup WebRTC
-function setupWebRTC(iceServerUrl, iceServerUsername, iceServerCredential) {
-    // Create WebRTC peer connection
+function setupWebRTC() {
+    IceServerUsername = "BQAANmXAyIAB2iE0CgIjuChTUuN6ju7NH2owrtXiS1AAAAAMARBLzcgb+8ZGv7VTu51ROGIsrn3j1xkOsVZBYYwYaz6M5IQwJe4="
+    IceServerCredential = "33qDidv0KCP3VDTvpWZCeSaDq2Y="
     peerConnection = new RTCPeerConnection({
         iceServers: [{
-            urls: [ iceServerUrl ],
-            username: iceServerUsername,
-            credential: iceServerCredential
+            urls: [IceServerUrl],
+            username: IceServerUsername,
+            credential: IceServerCredential
         }]
     })
-
     // Fetch WebRTC video stream and mount it to an HTML video element
     peerConnection.ontrack = function (event) {
+        console.log('peerconnection.ontrack', event)
         // Clean up existing video element if there is any
         remoteVideoDiv = document.getElementById('remoteVideo')
         for (var i = 0; i < remoteVideoDiv.childNodes.length; i++) {
@@ -36,331 +70,374 @@ function setupWebRTC(iceServerUrl, iceServerUsername, iceServerCredential) {
                 remoteVideoDiv.removeChild(remoteVideoDiv.childNodes[i])
             }
         }
-
-        if (event.track.kind === 'audio') {
-            let audioElement = document.createElement('audio')
-            audioElement.id = 'audioPlayer'
-            audioElement.srcObject = event.streams[0]
-            audioElement.autoplay = true
-
-            audioElement.onplaying = () => {
-                log(`WebRTC ${event.track.kind} channel connected.`)
-            }
-
-            document.getElementById('remoteVideo').appendChild(audioElement)
-        }
-
-        if (event.track.kind === 'video') {
-            let videoElement = document.createElement('video')
-            videoElement.id = 'videoPlayer'
-            videoElement.srcObject = event.streams[0]
-            videoElement.autoplay = true
-            videoElement.playsInline = true
-
-            videoElement.onplaying = () => {
-                log(`WebRTC ${event.track.kind} channel connected.`)
-                document.getElementById('startMicrophone').disabled = false
-                document.getElementById('stopSession').disabled = false
-            }
-
-            document.getElementById('remoteVideo').appendChild(videoElement)
-        }
+        const videoElement = document.createElement(event.track.kind)
+        videoElement.id = event.track.kind
+        videoElement.srcObject = event.streams[0]
+        videoElement.autoplay = true
+        videoElement.controls = false
+        document.getElementById('remoteVideo').appendChild(videoElement)
+        canvas = document.getElementById('canvas')
+        remoteVideoDiv.hidden = true
+        canvas.hidden = false
+        videoElement.addEventListener('play', () => {
+            remoteVideoDiv.style.width = videoElement.videoWidth / 2 + 'px'
+            window.requestAnimationFrame(makeBackgroundTransparent)
+        })
     }
-
     // Make necessary update to the web page when the connection state changes
     peerConnection.oniceconnectionstatechange = e => {
         console.log("WebRTC status: " + peerConnection.iceConnectionState)
-
+        
         if (peerConnection.iceConnectionState === 'connected') {
-            document.getElementById('configuration').hidden = true
+          greeting()
+          document.getElementById('loginOverlay').classList.add("hidden");
         }
-
-        if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
-            document.getElementById('configuration').hidden = false
+    
+        if (peerConnection.iceConnectionState === 'disconnected') {
+          document.getElementById('loginOverlay').classList.remove("hidden");
+          alert("Connection lost. Please refresh the page to reconnect.");
         }
     }
-
+    
     // Offer to receive 1 audio, and 1 video track
     peerConnection.addTransceiver('video', { direction: 'sendrecv' })
     peerConnection.addTransceiver('audio', { direction: 'sendrecv' })
-
-    // start avatar, establish WebRTC connection
-    avatarSynthesizer.startAvatarAsync(peerConnection).then((r) => {
-        console.log("Avatar started.")
-    }).catch(
-        (error) => {
-            console.log("[" + (new Date()).toISOString() + "] Avatar failed to start. Error: " + error)
-            document.getElementById('startSession').disabled = false
-            document.getElementById('configuration').hidden = false
-        }
-    )
+    
+    // Set local description
+    peerConnection.createOffer().then(sdp => {
+        peerConnection.setLocalDescription(sdp).then(() => { setTimeout(() => { connectToAvatarService() }, 1000) })
+    }).catch(console.log)
 }
 
-// Initialize messages
-function initMessages() {
-    messages = []
-
-    if (dataSources.length === 0) {
-        let systemPrompt = document.getElementById('prompt').value
-        let systemMessage = {
-            role: 'system',
-            content: systemPrompt
-        }
-
-        messages.push(systemMessage)
+async function generateText(prompt) {
+  messages.push({
+    role: 'user',
+    content: prompt
+  });
+ 
+  let generatedText;
+  let products;
+  const apiUrl = "/api/message"; // Update with the actual API endpoint
+ 
+  try {
+    const response = await axios.post(apiUrl, {
+      messages: messages
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+ 
+    // Assuming the response.data structure matches your expectations
+    generatedText = response.data.messages[response.data.messages.length - 1].content;
+    messages = response.data.messages;
+    products = response.data.products;
+ 
+    addToConversationHistory(generatedText, 'light');
+ 
+    if (products && products.length > 0) {
+      addProductToChatHistory(products[0]);
     }
+ 
+    return generatedText;
+ 
+  } catch (error) {
+    // Check if the error is due to CORS or server-side issues
+    if (error.response) {
+      console.error("Server responded with an error:", error.response.status);
+    } else if (error.request) {
+      console.error("The request was made, but no response was received.");
+    } else {
+      console.error("Error setting up the request:", error.message);
+    }
+ 
+    // Handle the error accordingly
+    console.log("Error details:", error);
+  }
 }
+// Connect to TTS Avatar API
+function connectToAvatarService() {
+  // Construct TTS Avatar service request
+  let videoCropTopLeftX = 600
+  let videoCropBottomRightX = 1320
+  let backgroundColor = '#00FF00FF'
 
-// Set data sources for chat API
-function setDataSources(azureCogSearchEndpoint, azureCogSearchApiKey, azureCogSearchIndexName) {
-    let dataSource = {
-        type: 'AzureCognitiveSearch',
-        parameters: {
-            endpoint: azureCogSearchEndpoint,
-            key: azureCogSearchApiKey,
-            indexName: azureCogSearchIndexName,
-            semanticConfiguration: '',
-            queryType: 'simple',
-            fieldsMapping: {
-                contentFieldsSeparator: '\n',
-                contentFields: ['content'],
-                filepathField: null,
-                titleField: 'title',
-                urlField: null
+  console.log(peerConnection.localDescription)
+  const clientRequest = {
+    protocol: {
+      name: "WebRTC",
+      webrtcConfig: {
+        clientDescription: btoa(JSON.stringify(peerConnection.localDescription)),
+        iceServers: [{
+          urls: [IceServerUrl],
+          username: IceServerUsername,
+          credential: IceServerCredential
+        }]
+      },
+    },
+    format: {
+      codec: 'H264',
+        resolution: {
+            width: 1920,
+            height: 1080
+        },
+        crop:{
+            topLeft: {
+                x: videoCropTopLeftX,
+                y: 0
             },
-            inScope: true,
-            roleInformation: document.getElementById('prompt').value
-        }
-    }
-
-    dataSources.push(dataSource)
-}
-
-// Do HTML encoding on given text
-function htmlEncode(text) {
-    const entityMap = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-      '/': '&#x2F;'
-    };
-  
-    return String(text).replace(/[&<>"'\/]/g, (match) => entityMap[match])
-}
-
-// Speak the given text
-function speak(text, endingSilenceMs = 0) {
-    let ttsVoice = document.getElementById('ttsVoice').value
-    let chatHistoryTextArea = document.getElementById('chatHistory')
-    chatHistoryTextArea.innerHTML += `Assistant: ${text}\n\n`
-    chatHistoryTextArea.scrollTop = chatHistoryTextArea.scrollHeight
-
-    // If there is any speaking thread, stop it
-    if (speakingThreads > 0) {
-        stopSpeaking()
-    }
-
-    speakingThreads++
-    let ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='en-US'><voice name='${ttsVoice}'><mstts:leadingsilence-exact value='0'/>${htmlEncode(text)}</voice></speak>`
-    if (endingSilenceMs > 0) {
-        ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='en-US'><voice name='${ttsVoice}'><mstts:leadingsilence-exact value='0'/>${htmlEncode(text)}<break time='${endingSilenceMs}ms' /></voice></speak>`
-    }
-
-    avatarSynthesizer.speakSsmlAsync(ssml).then(
-        (result) => {
-            speakingThreads--
-            if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
-                console.log(`Speech synthesized to speaker for text [ ${text} ]`)
-            } else {
-                console.log(`Error occurred while speaking the SSML.`)
+            bottomRight: {
+                x: videoCropBottomRightX,
+                y: 1080
             }
-        }).catch(
-            (error) => {
-                console.log(`Error occurred while speaking the SSML: [ ${error} ]`)
-            }
-        )
-}
+        },
+        bitrate: 2000000
+    },
+    talkingAvatar: {
+      character: TalkingAvatarCharacter,
+      style: TalkingAvatarStyle,
+      background: {
+          color: backgroundColor
+      }
+  }
+  }
 
-function stopSpeaking() {
-    avatarSynthesizer.stopSpeakingAsync().then(
-        log("[" + (new Date()).toISOString() + "] Stop speaking request sent.")
-    ).catch(
-        (error) => {
-            console.log("Error occurred while stopping speaking: " + error)
-        }
-    )
-}
+  // Callback function to handle the response from TTS Avatar API
+  const complete_cb = function (result) {
+    const sdp = result.properties.getProperty(SpeechSDK.PropertyId.TalkingAvatarService_WebRTC_SDP)
+    if (sdp === undefined) {
+      console.log("Failed to get remote SDP. The avatar instance is temporarily unavailable. Result ID: " + result.resultId)
+      document.getElementById('startSession').disabled = false
+    }
 
-function getQuickReply() {
-    return quickReplies[Math.floor(Math.random() * quickReplies.length)]
+    peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(atob(sdp)))).then(r => { })
+  }
+
+  const error_cb = function (result) {
+    let cancellationDetails = SpeechSDK.CancellationDetails.fromResult(result)
+    console.log(cancellationDetails)
+    document.getElementById('startSession').disabled = false
+  }
+
+  // Call TTS Avatar API
+  speechSynthesizer.setupTalkingAvatarAsync(JSON.stringify(clientRequest), complete_cb, error_cb)
 }
 
 window.startSession = () => {
-    const cogSvcRegion = document.getElementById('region').value
-    const cogSvcSubKey = document.getElementById('subscriptionKey').value
-    if (cogSvcSubKey === '') {
-        alert('Please fill in the subscription key of your speech resource.')
-        return
+  // Create the <i> element
+  var iconElement = document.createElement("i");
+  iconElement.className = "fa fa-spinner fa-spin";
+  iconElement.id = "loadingIcon"
+  var parentElement = document.getElementById("playVideo");
+  parentElement.prepend(iconElement);
+ 
+  speechSynthesisConfig.speechSynthesisVoiceName = TTSVoice;
+  document.getElementById('playVideo').className = "round-button-hide";
+
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "/api/getSpeechToken", true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState == 4) {
+      if (xhr.status == 200) {
+        var response = xhr.access_token;
+        speechSynthesisConfig.authorizationToken = response;
+        token = response;
+        speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
+        requestAnimationFrame(setupWebRTC);
+      } else if (xhr.status == 404) {
+        console.error("Error fetching access token: 404 (Not Found)");
+      } else {
+        console.error("Error fetching access token: ", + xhr.status + " " + xhr.access_token);
+      }
     }
+  };
+  xhr.send();
+}
+      
+async function greeting() {
+  addToConversationHistory("Hello, my name is Lisa. How can I help you?", "light")
 
-    const speechSynthesisConfig = SpeechSDK.SpeechConfig.fromSubscription(cogSvcSubKey, cogSvcRegion)
-    speechSynthesisConfig.endpointId = document.getElementById('customVoiceEndpointId').value
-    speechSynthesisConfig.speechSynthesisVoiceName = document.getElementById('ttsVoice').value
-
-    const talkingAvatarCharacter = document.getElementById('talkingAvatarCharacter').value
-    const talkingAvatarStyle = document.getElementById('talkingAvatarStyle').value
-    const avatarConfig = new SpeechSDK.AvatarConfig(talkingAvatarCharacter, talkingAvatarStyle)
-    avatarConfig.customized = document.getElementById('customizedAvatar').checked
-    avatarSynthesizer = new SpeechSDK.AvatarSynthesizer(speechSynthesisConfig, avatarConfig)
-    avatarSynthesizer.avatarEventReceived = function (s, e) {
-        var offsetMessage = ", offset from session start: " + e.offset / 10000 + "ms."
-        if (e.offset === 0) {
-            offsetMessage = ""
+  let spokenText = "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='https://www.w3.org/2001/mstts' xml:lang='en-US'><voice xml:lang='en-US' xml:gender='Female' name='en-US-JennyNeural'>Hello, my name is Lisa. How can I help you?</voice></speak>"
+  speechSynthesizer.speakSsmlAsync(spokenText, (result) => {
+    if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+      console.log("Speech synthesized to speaker for text [ " + spokenText + " ]. Result ID: " + result.resultId)
+    } else {
+      console.log("Unable to speak text. Result ID: " + result.resultId)
+      if (result.reason === SpeechSDK.ResultReason.Canceled) {
+        let cancellationDetails = SpeechSDK.CancellationDetails.fromResult(result)
+        console.log(cancellationDetails.reason)
+        if (cancellationDetails.reason === SpeechSDK.CancellationReason.Error) {
+          console.log(cancellationDetails.errorDetails)
         }
-
-        console.log("Event received: " + e.description + offsetMessage)
+      }
     }
+  })
+}
 
-    const speechRecognitionConfig = SpeechSDK.SpeechConfig.fromSubscription(cogSvcSubKey, cogSvcRegion)
-    speechRecognitionConfig.speechRecognitionLanguage = document.getElementById('sttLocale').value
-    speechRecognizer = new SpeechSDK.SpeechRecognizer(speechRecognitionConfig, SpeechSDK.AudioConfig.fromDefaultMicrophoneInput())
+window.speak = (text) => {
+  async function speak(text) {
+    addToConversationHistory(text, 'dark')
 
-    const azureOpenAIEndpoint = document.getElementById('azureOpenAIEndpoint').value
-    const azureOpenAIApiKey = document.getElementById('azureOpenAIApiKey').value
-    const azureOpenAIDeploymentName = document.getElementById('azureOpenAIDeploymentName').value
-    if (azureOpenAIEndpoint === '' || azureOpenAIApiKey === '' || azureOpenAIDeploymentName === '') {
-        alert('Please fill in the Azure OpenAI endpoint, API key and deployment name.')
-        return
-    }
+    fetch("/api/detectLanguage?text="+text, {
+      method: "POST"
+    })
+      .then(response => response.text())
+      .then(async language => {
+        console.log(`Detected language: ${language}`);
 
-    dataSources = []
-    if (document.getElementById('enableByod').checked) {
-        const azureCogSearchEndpoint = document.getElementById('azureCogSearchEndpoint').value
-        const azureCogSearchApiKey = document.getElementById('azureCogSearchApiKey').value
-        const azureCogSearchIndexName = document.getElementById('azureCogSearchIndexName').value
-        if (azureCogSearchEndpoint === "" || azureCogSearchApiKey === "" || azureCogSearchIndexName === "") {
-            alert('Please fill in the Azure Cognitive Search endpoint, API key and index name.')
-            return
-        } else {
-            setDataSources(azureCogSearchEndpoint, azureCogSearchApiKey, azureCogSearchIndexName)
+        const generatedResult = await generateText(text);
+        
+        let spokenTextssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='https://www.w3.org/2001/mstts' xml:lang='en-US'><voice xml:lang='en-US' xml:gender='Female' name='en-US-JennyMultilingualNeural'><lang xml:lang="${language}">${generatedResult}</lang></voice></speak>`
+
+        if (language == 'ar-AE') {
+          spokenTextssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='https://www.w3.org/2001/mstts' xml:lang='en-US'><voice xml:lang='en-US' xml:gender='Female' name='ar-AE-FatimaNeural'><lang xml:lang="${language}">${generatedResult}</lang></voice></speak>`
         }
-    }
-
-    initMessages()
-
-    const iceServerUrl = document.getElementById('iceServerUrl').value
-    const iceServerUsername = document.getElementById('iceServerUsername').value
-    const iceServerCredential = document.getElementById('iceServerCredential').value
-    if (iceServerUrl === '' || iceServerUsername === '' || iceServerCredential === '') {
-        alert('Please fill in the ICE server URL, username and credential.')
-        return
-    }
-
-    document.getElementById('startSession').disabled = true
-    
-    setupWebRTC(iceServerUrl, iceServerUsername, iceServerCredential)
+        let spokenText = generatedResult
+        speechSynthesizer.speakSsmlAsync(spokenTextssml, (result) => {
+          if (result.reason === SpeechSDK.ResultReason.SynthesizingAudioCompleted) {
+            console.log("Speech synthesized to speaker for text [ " + spokenText + " ]. Result ID: " + result.resultId)
+          } else {
+            console.log("Unable to speak text. Result ID: " + result.resultId)
+            if (result.reason === SpeechSDK.ResultReason.Canceled) {
+              let cancellationDetails = SpeechSDK.CancellationDetails.fromResult(result)
+              console.log(cancellationDetails.reason)
+              if (cancellationDetails.reason === SpeechSDK.CancellationReason.Error) {
+                console.log(cancellationDetails.errorDetails)
+              }
+            }
+          }
+        })
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+  }
+  speak(text);
 }
 
 window.stopSession = () => {
-    document.getElementById('startSession').disabled = false
-    document.getElementById('startMicrophone').disabled = true
-    document.getElementById('stopSession').disabled = true
-    speechRecognizer.stopContinuousRecognitionAsync()
-    speechRecognizer.close()
-    avatarSynthesizer.close()
+  speechSynthesizer.close()
 }
 
-window.clearChatHistory = () => {
-    document.getElementById('chatHistory').innerHTML = ''
-    initMessages()
-}
+window.startRecording = () => {
+  const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, 'westeurope');
+  speechConfig.authorizationToken = token;
+  speechConfig.SpeechServiceConnection_LanguageIdMode = "Continuous";
+  var autoDetectSourceLanguageConfig = SpeechSDK.AutoDetectSourceLanguageConfig.fromLanguages(supported_languages);
+  // var autoDetectSourceLanguageConfig = SpeechSDK.AutoDetectSourceLanguageConfig.fromLanguages(["en-US"]);
 
-window.startMicrophone = () => {
-    document.getElementById('startMicrophone').disabled = true
-    document.getElementById('audioPlayer').play()
-    speechRecognizer.recognized = async (s, e) => {
-        if (e.result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
-            let userQuery = e.result.text.trim()
-            if (userQuery === '') {
-                return
-            }
+  document.getElementById('buttonIcon').className = "fas fa-stop"
+  document.getElementById('startRecording').disabled = true
 
-            let chatMessage = {
-                role: 'user',
-                content: userQuery
-            }
+  recognizer = SpeechSDK.SpeechRecognizer.FromConfig(speechConfig, autoDetectSourceLanguageConfig);
 
-            messages.push(chatMessage)
-            let chatHistoryTextArea = document.getElementById('chatHistory')
-            chatHistoryTextArea.innerHTML += "User: " + userQuery + '\n\n'
-            chatHistoryTextArea.scrollTop = chatHistoryTextArea.scrollHeight
-
-            // For 'bring your data' scenario, chat API currently has long (4s+) latency
-            // We return some quick reply here before the chat API returns to mitigate.
-            if (dataSources.length > 0 && enableQuickReply) {
-                speak(getQuickReply(), 2000)
-            }
-
-            const azureOpenAIEndpoint = document.getElementById('azureOpenAIEndpoint').value
-            const azureOpenAIApiKey = document.getElementById('azureOpenAIApiKey').value
-            const azureOpenAIDeploymentName = document.getElementById('azureOpenAIDeploymentName').value
-
-            let url = "{AOAIEndpoint}/openai/deployments/{AOAIDeployment}/chat/completions?api-version=2023-03-15-preview".replace("{AOAIEndpoint}", azureOpenAIEndpoint).replace("{AOAIDeployment}", azureOpenAIDeploymentName)
-            let body = JSON.stringify({
-                messages: messages
-            })
-
-            if (dataSources.length > 0) {
-                url = "{AOAIEndpoint}/openai/deployments/{AOAIDeployment}/extensions/chat/completions?api-version=2023-06-01-preview".replace("{AOAIEndpoint}", azureOpenAIEndpoint).replace("{AOAIDeployment}", azureOpenAIDeploymentName)
-                body = JSON.stringify({
-                    messages: messages,
-                    dataSources: dataSources
-                })
-            }
-
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'api-key': azureOpenAIApiKey,
-                    'Content-Type': 'application/json'
-                },
-                body: body
-            })
-            .then(response => response.json())
-            .then(data => {
-                let reply = ''
-                if (dataSources.length === 0) {
-                    reply = data.choices[0].message.content
-                } else {
-                    let toolMessage = {
-                        role: 'tool',
-                        content: data.choices[0].messages[0].content
-                    }
-
-                    messages.push(toolMessage)
-                    reply = data.choices[0].messages[1].content
-                }
-
-                let assistantMessage = {
-                    role: 'assistant',
-                    content: reply
-                }
-
-                messages.push(assistantMessage)
-                speak(reply.replace(/\[doc(\d+)\]/g, '').trim())
-            })
-        }
+  recognizer.recognized = function (s, e) {
+    if (e.result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+      console.log('Recognized:', e.result.text);
+      window.stopRecording();
+      // TODO: append to conversation
+      window.speak(e.result.text);
     }
+  };
 
-    speechRecognizer.startContinuousRecognitionAsync()
+  recognizer.startContinuousRecognitionAsync();
+
+  console.log('Recording started.');
 }
 
-window.updataEnableByod = () => {
-    if (document.getElementById('enableByod').checked) {
-        document.getElementById('cogSearchConfig').hidden = false
-    } else {
-        document.getElementById('cogSearchConfig').hidden = true
-    }
+window.stopRecording = () => {
+  if (recognizer) {
+    recognizer.stopContinuousRecognitionAsync(
+      function () {
+        recognizer.close();
+        recognizer = undefined;
+        document.getElementById('buttonIcon').className = "fas fa-microphone"
+        document.getElementById('startRecording').disabled = false
+        console.log('Recording stopped.');
+      },
+      function (err) {
+        console.error('Error stopping recording:', err);
+      }
+    );
+  }
+}
+
+window.submitText = () => {
+  document.getElementById('spokenText').textContent = document.getElementById('textinput').currentValue
+  document.getElementById('textinput').currentValue = ""
+  window.speak(document.getElementById('textinput').currentValue);
+}
+
+
+function addToConversationHistory(item, historytype) {
+  const list = document.getElementById('chathistory');
+  const newItem = document.createElement('li');
+  newItem.classList.add('message');
+  newItem.classList.add(`message--${historytype}`);
+  newItem.textContent = item;
+  list.appendChild(newItem);
+}
+
+function addProductToChatHistory(product) {
+  const list = document.getElementById('chathistory');
+  const listItem = document.createElement('li');
+  listItem.classList.add('product');
+  listItem.innerHTML = `
+    <fluent-card class="product-card">
+      <div class="product-card__header">
+        <img src="${product.image_url}" alt="tent" width="100%">
+      </div>
+      <div class="product-card__content">
+        <div><span class="product-card__price">$${product.special_offer}</span> <span class="product-card__old-price">$${product.original_price}</span></div>
+        <div>${product.tagline}</div>
+      </div>
+    </fluent-card>
+  `;
+  list.appendChild(listItem);
+}
+
+// Make video background transparent by matting
+function makeBackgroundTransparent(timestamp) {
+  // Throttle the frame rate to 30 FPS to reduce CPU usage
+  if (timestamp - previousAnimationFrameTimestamp > 30) {
+      video = document.getElementById('video')
+      tmpCanvas = document.getElementById('tmpCanvas')
+      tmpCanvasContext = tmpCanvas.getContext('2d', { willReadFrequently: true })
+      tmpCanvasContext.drawImage(video, 0, 0, video.videoWidth, video.videoHeight)
+      if (video.videoWidth > 0) {
+          let frame = tmpCanvasContext.getImageData(0, 0, video.videoWidth, video.videoHeight)
+          for (let i = 0; i < frame.data.length / 4; i++) {
+              let r = frame.data[i * 4 + 0]
+              let g = frame.data[i * 4 + 1]
+              let b = frame.data[i * 4 + 2]
+              
+              if (g - 150 > r + b) {
+                  // Set alpha to 0 for pixels that are close to green
+                  frame.data[i * 4 + 3] = 0
+              } else if (g + g > r + b) {
+                  // Reduce green part of the green pixels to avoid green edge issue
+                  adjustment = (g - (r + b) / 2) / 3
+                  r += adjustment
+                  g -= adjustment * 2
+                  b += adjustment
+                  frame.data[i * 4 + 0] = r
+                  frame.data[i * 4 + 1] = g
+                  frame.data[i * 4 + 2] = b
+                  // Reduce alpha part for green pixels to make the edge smoother
+                  a = Math.max(0, 255 - adjustment * 4)
+                  frame.data[i * 4 + 3] = a
+              }
+          }
+
+          canvas = document.getElementById('canvas')
+          canvasContext = canvas.getContext('2d')
+          canvasContext.putImageData(frame, 0, 0);
+      }
+
+      previousAnimationFrameTimestamp = timestamp
+  }
+
+  window.requestAnimationFrame(makeBackgroundTransparent)
 }
