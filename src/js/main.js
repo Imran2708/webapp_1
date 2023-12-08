@@ -235,7 +235,7 @@ window.startSession = () => {
   document.getElementById('playVideo').className = "round-button-hide";
 
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/api/getSpeechToken", true);
+  xhr.open("GET", "api/getSpeechToken/__init__.py", true);
   xhr.setRequestHeader("Content-Type", "application/json");
 
   xhr.onreadystatechange = function() {
@@ -250,6 +250,7 @@ window.startSession = () => {
         console.error("Error fetching access token: 404 (Not Found)");
       } else {
         console.error("Error fetching access token: ", + xhr.status + " " + xhr.access_token);
+        console.error(xhr.responseText);
       }
     }
   };
