@@ -241,10 +241,10 @@ window.startSession = () => {
   xhr.onreadystatechange = function() {
     if (xhr.readyState == 4) {
       if (xhr.status == 200) {
-        var response = xhr.access_token;
-        speechSynthesisConfig.authorizationToken = response;
-        token = response;
-        speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
+        var response = JSON.parse(xhr.responseTEXT);
+        speechSynthesisConfig.authorizationToken = response.access_tokens;
+        var token = response_access_tokens;
+        var speechSynthesizer = new SpeechSDK.SpeechSynthesizer(speechSynthesisConfig, null);
         requestAnimationFrame(setupWebRTC);
       } else if (xhr.status == 404) {
         console.error("Error fetching access token: 404 (Not Found)");
