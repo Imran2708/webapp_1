@@ -29,8 +29,10 @@ let IceServerCredential
 const BackgroundColor = '#FFFFFFFF'
 
 let token
-
-const speechSynthesisConfig = SpeechSDK.SpeechConfig.fromEndpoint(new URL("wss://{region}.tts.speech.microsoft.com/cognitiveservices/websocket/v1?enableTalkingAvatar=true".replace("{region}", CogSvcRegion)))
+var SpeechSDK = require("microsoft-cognitiveservices-speech-sdk");
+document.addEventListener("DOMContentLoaded", functiom() {
+  const speechSynthesisConfig = SpeechSDK.SpeechConfig.fromEndpoint(new URL("wss://{region}.tts.speech.microsoft.com/cognitiveservices/websocket/v1?enableTalkingAvatar=true".replace("{region}", CogSvcRegion)))
+});
 
 // Global objects
 var speechSynthesizer
