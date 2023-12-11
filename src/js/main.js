@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license.
 
-import * as SpeechSDk from "microsoft-coginitiveservices-speech-sdk";
+
 
 var system_prompt = `You are an AI assistant focused on delivering brief product details and assisting with the ordering process.
 - Before calling a function, aim to answer product queries using existing conversational context.
@@ -32,6 +32,7 @@ const BackgroundColor = '#FFFFFFFF'
 
 let token
 //var SpeechSDK = require("microsoft-cognitiveservices-speech-sdk");
+import * as SpeechSDk from "microsoft-coginitiveservices-speech-sdk";
 document.addEventListener("DOMContentLoaded", function() {
   const speechSynthesisConfig = SpeechSDK.SpeechConfig.fromEndpoint(new URL("wss://{region}.tts.speech.microsoft.com/cognitiveservices/websocket/v1?enableTalkingAvatar=true".replace("{region}", CogSvcRegion)))
 });
