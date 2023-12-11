@@ -1,31 +1,13 @@
 {
+  "routes": {
+    "/api/detectLanguage": "api/detectLanguage",
+    "/api/getIceServerToken": "api/getIceServerToken",
+    "/api/getSpeechToken": "api/getSpeechToken",
+    "/api/message": "api/message",
+    "/*": "src/index.html"
+  },
   "navigationFallback": {
     "rewrite": "src/index.html",
-    "exclude": ["/api/**"]
-  },
-  "routes": [
-    {
-      "route": "/api/detectLanguage/*",
-      "serve": "api/detectLanguage"
-    },
-    {
-      "route": "/api/getIceServerToken/*",
-      "serve": "api/getIceServerToken"
-    },
-    {
-      "route": "/api/getSpeechToken/*",
-      "serve": "api/getSpeechToken"
-    },
-    {
-      "route": "/api/message/*",
-      "serve": "api/message"
-    },
-    {
-      "route": "/*",
-      "rewrite": "index.html"
-    }
-  ],
-  "platform": {
-    "node": "14"
+    "exclude": ["/api/*"]
   }
 }
