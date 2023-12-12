@@ -33,7 +33,7 @@ const BackgroundColor = '#FFFFFFFF'
 let token
 //var SpeechSDK = require("microsoft-cognitiveservices-speech-sdk");
 //import * as SpeechSDK from "microsoft-cognitiveservices-speech-sdk";
-const SpeechSDK = require("microsoft-cognitiveservices-speech-sdk");
+//const SpeechSDK = require("microsoft-cognitiveservices-speech-sdk");
 document.addEventListener("DOMContentLoaded", function() {
   const speechSynthesisConfig = SpeechSDK.SpeechConfig.fromEndpoint(new URL("wss://{region}.tts.speech.microsoft.com/cognitiveservices/websocket/v1?enableTalkingAvatar=true".replace("{region}", CogSvcRegion)))
 });
